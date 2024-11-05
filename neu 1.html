@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Übersichtsraster Gebäude Brandschaden</title>
+    <!-- Leaflet CSS einbinden -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    <style>
+        #map {
+            height: 600px;
+            width: 100%;
+        }
+        #passwordPrompt {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(255, 255, 255, 0.9);
+            z-index: 9999;
+        }
+        #addMarkerButton {
+            margin: 10px 0;
+            padding: 10px;
+            background-color: white;
+            border: 1px solid black;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <h1>Übersichtsraster Gebäude Brandschaden</h1>
+    
+    <!-- Button für neue Marker direkt unter der Überschrift -->
+    <button id="addMarkerButton" onclick="createDraggableMarker()">Neuen Marker setzen</button>
+
+    <!-- Passwortabfrage -->
+    <div id="passwordPrompt">
+        <p>Bitte Passwort eingeben:</p>
+        <input type="password" id="passwordInput" placeholder="Passwort">
+        <button onclick="checkPassword()">Einloggen</button>
+    </div>
+
+    <!-- Kartenelement -->
+    <div id="map"></div>
+
+    <!-- Leaflet JavaScript einbinden -->
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+    <script>
+        let map;
+        let markers = [];
+
+        // Passwortschutz
+        function checkPassword() {
+            const password = document.getElementById('passwordInput').value;
+            if (password === "PW0815") {
+                document.getElementById('passwordPrompt').style.display = 'none';
+            } else {
+                alert("Falsches Passwort.");
+            }
+        }
+
+        // Initialisierung der Bildkarte
+        function initMap() {
+            const imageUrl = 'https://raw.githubusercontent.com/GEORGPHILIPP/mapgrillo/main/MapGrillo1.jpg';  // URL des Bildes von GitHub
+            const imageBounds = [[0, 0], [1000, 1000]];  // Anpassung der Bildgröße
+
+            map = L.map('map', {
+                crs: L.CRS.Simple,
+                minZoom: -2,
+                maxZoom: 2,
+                zoomControl: true,
+            });
+
+            L.imageOverlay(imageUrl, imageBounds).addTo(map);
+            map.fitBounds(imageBounds);
+        }
+
+        // Karte initialisieren
+        initMap();
+
+        // Funktion zur Erstellung eines neuen Markers
+        function createDraggableMarker() {
+            const marker = L.marker(map.getCenter(), { draggable: true }).addTo(map);
+            markers.push(marker);
+
+            const popupContent = createPopupContent(marker);
+            marker.bindPopup(popupContent).openPopup();
+
+            marker.on('dragend', function (event) {
+                marker.openPopup();
+            });
+        }
+
+        // Funktion zur Erstellung des Popup-Inhalts mit Formular
+        function createPopupContent(marker) {
+            const markerId = markers.indexOf(marker);
+            return `
+                <div>
+                    <form onsubmit="submitForm(event, this, ${markerId})">
+                        <label>Personendaten: <input type="text" name="person"></label><br>
+                        <label>Firma: <input type="text" name="firma"></label><br>
+                        <label>Startzeit: <input type="time" name="startzeit"></label><br>
+                        <label>Endzeit: <input type="time" name="endzeit"></label><br>
+                        <label>Datum: <input type="date" name="datum"></label><br>
+                        <label>Tätigkeit: <input type="text" name="tätigkeit"></label><br>
+                        <button type="submit">Speichern</button>
+                        <button type="button" onclick="deleteMarker(${markerId})">Löschen</button>
+                    </form>
+                </div>
+            `;
+        }
+
+        // Daten speichern und Popup aktualisieren
+        function submitForm(event, form, markerId) {
+            event.preventDefault();
+            const data = {
+                person: form.person.value,
+                firma: form.firma.value,
+                startzeit: form.startzeit.value,
+                endzeit: form.endzeit.value,
+                datum: form.datum.value,
+                tätigkeit: form.tätigkeit.value
+            };
+            const marker = markers[markerId];
+            const content = `
+                <b>Personendaten:</b> ${data.person}<br>
+                <b>Firma:</b> ${data.firma}<br>
+                <b>Startzeit:</b> ${data.startzeit}<br>
+                <b>Endzeit:</b> ${data.endzeit}<br>
+                <b>Datum:</b> ${data.datum}<br>
+                <b>Tätigkeit:</b> ${data.tätigkeit}<br>
+                <button type="button" onclick="deleteMarker(${markerId})">Löschen</button>
+            `;
+            marker.bindPopup(content).openPopup();
+        }
+
+        // Marker löschen
+        function deleteMarker(markerId) {
+            const marker = markers[markerId];
+            if (marker) {
+                map.removeLayer(marker);
+                markers.splice(markerId, 1);  // Marker aus dem Array entfernen
+            }
+        }
+    </script>
+</body>
+</html>
+
